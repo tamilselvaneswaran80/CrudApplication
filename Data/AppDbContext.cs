@@ -12,4 +12,6 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Register> Registers { get; set; }
     public DbSet<Student> Students { get; set; }
+
+    public DbSet<ResetPassword> resets { get; set; }
 }

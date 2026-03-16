@@ -1,5 +1,6 @@
 ﻿using Crud_application.Models;
 using Crud_application.Services;
+using Curd_application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -71,6 +72,19 @@ namespace Crud_application.Controllers
                 return NotFound();
 
             return NoContent();
+        }
+
+        [HttpPut("reset-password/{id}")]
+        public async Task<IActionResult> ResetPassword(int id, ResetPassword reset)
+        {
+            var result = await _crudService.ResetPassword(id,reset);
+
+            if (!result)
+            {
+                return NotFound("User not found");
+            }
+
+            return Ok(new { message = "Password updated successfully" });
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Crud_application.Data;
 using Crud_application.Models;
+using Curd_application.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Crud_application.Services
@@ -11,6 +12,8 @@ namespace Crud_application.Services
         Task<Register?> Update(int id, Register user);
         Task<bool> Delete(int id);
         Task<Register?> GetUser(int id);
+
+        Task<bool> ResetPassword(int id ,ResetPassword reset);
     }
 
     public class CrudService : ICrudService
@@ -38,6 +41,10 @@ namespace Crud_application.Services
         {
             var user = await _context.Registers
                 .FirstOrDefaultAsync(u => u.Email == login.Email && u.Password == login.Password);
+            if (user == null)
+            {
+                return null; // Invalid login
+            }
 
             var token = _tokenService.CreateToken(user.Email);
 
@@ -92,6 +99,35 @@ namespace Crud_application.Services
 
                 return null;
 
+            }
+        }
+
+        public async Task<bool> ResetPassword(int id, ResetPassword reset)
+        {
+            try
+            {
+                var user = await _context.Registers
+        .FirstOrDefaultAsync(x => x.Id == id && x.Email == reset.Email);
+
+                if (user == null)
+                {
+                    return false;
+                }
+                
+                user.Password = reset.NewPassword;
+
+                _context.Registers.Update(user);
+
+                await _context.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Optional: log error
+                Console.WriteLine(ex.Message);
+
+                return false;
             }
         }
     }
