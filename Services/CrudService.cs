@@ -1,6 +1,7 @@
 ﻿using Crud_application.Data;
 using Crud_application.Models;
 using Curd_application.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Crud_application.Services
@@ -8,9 +9,11 @@ namespace Crud_application.Services
     public interface ICrudService
     {
         Task<Register> Register(Register user);
-        Task<string> Login(User login);
+        Task<object> Login(User login);
         Task<Register?> Update(int id, Register user);
         Task<bool> Delete(int id);
+
+        Task<List<Register>> GetUsers();
         Task<Register?> GetUser(int id);
 
         Task<bool> ResetPassword(int id ,ResetPassword reset);
@@ -37,7 +40,7 @@ namespace Crud_application.Services
         }
 
         // LOGIN
-        public async Task<string> Login(User login)
+        public async Task<object> Login(User login)
         {
             var user = await _context.Registers
                 .FirstOrDefaultAsync(u => u.Email == login.Email && u.Password == login.Password);
@@ -46,9 +49,17 @@ namespace Crud_application.Services
                 return null; // Invalid login
             }
 
-            var token = _tokenService.CreateToken(user.Email);
+            var token = _tokenService.CreateToken(user);
 
-            return token;
+            return new
+            {
+                token = token,
+                user = new
+                {
+                    email = user.Email,
+                    role = user.Role,
+                }
+            };
         }
 
         // UPDATE
@@ -129,6 +140,10 @@ namespace Crud_application.Services
 
                 return false;
             }
+        }
+        public async Task<List<Register>> GetUsers()
+        {
+            return await _context.Registers.ToListAsync();
         }
     }
 }

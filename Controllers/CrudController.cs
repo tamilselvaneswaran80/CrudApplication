@@ -3,11 +3,13 @@ using Crud_application.Services;
 using Curd_application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Crud_application.Controllers
 {    
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // 🔥 Authentication required
     public class CrudController : ControllerBase
     {
         private readonly ICrudService _crudService;
@@ -16,9 +18,10 @@ namespace Crud_application.Controllers
         {
             _crudService = crudService;
         }
-
+        // CREATE
         // REGISTER
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> RegisterAsync([FromBody] Register user)
         {
             var result = await _crudService.Register(user);
@@ -27,20 +30,24 @@ namespace Crud_application.Controllers
 
         // LOGIN
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> LoginAsync([FromBody] User login)
         {
-            var token = await _crudService.Login(login);
+            var result = await _crudService.Login(login);
 
-            if (token == null)
+            if (result == null)
                 return Unauthorized("Invalid Email or Password");
 
-            return Ok(new {token});
+            return Ok(result);
         }
 
         // UPDATE USER
         [HttpPut("update/{id}")]
+        [Authorize(Policy = "Student.Edit")]
         public async Task<IActionResult> UpdateAsync(int id, [FromBody] Register user)
         {
+            if (user == null)
+                return BadRequest("User data is empty");
             var result = await _crudService.Update(id, user);
 
             if (result == null)
@@ -49,9 +56,9 @@ namespace Crud_application.Controllers
             return Ok(result);
         }
 
-        // GET USER BY ID
-        [Authorize]
+        // GET USER BY ID       
         [HttpGet("users/{id}")]
+        [Authorize(Policy = "Student.View")]
         public async Task<IActionResult> GetUserAsync(int id)
         {
             var user = await _crudService.GetUser(id);
@@ -63,7 +70,8 @@ namespace Crud_application.Controllers
         }
 
         // DELETE USER
-        [HttpDelete("{id}")]
+        [HttpDelete("delete/{id}")]
+        [Authorize(Policy = "Student.Delete")]
         public async Task<IActionResult> DeleteAsync(int id)
         {
             var deleted = await _crudService.Delete(id);
@@ -75,6 +83,7 @@ namespace Crud_application.Controllers
         }
 
         [HttpPut("reset-password/{id}")]
+        [Authorize(Policy = "Student.Edit")]
         public async Task<IActionResult> ResetPassword(int id, ResetPassword reset)
         {
             var result = await _crudService.ResetPassword(id,reset);
@@ -85,6 +94,13 @@ namespace Crud_application.Controllers
             }
 
             return Ok(new { message = "Password updated successfully" });
+        }
+        [HttpGet("get")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Get()
+        {
+            var users = await _crudService.GetUsers();
+            return Ok(users);
         }
     }
 }

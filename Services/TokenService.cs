@@ -1,6 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Crud_application.Models;
 using Microsoft.IdentityModel.Tokens;
 
 public class TokenService
@@ -12,14 +13,20 @@ public class TokenService
         _config = config;
     }
 
-    public string CreateToken(string email)
+    public string CreateToken(Register user)
     {
         var claims = new List <Claim>
         {
-            new Claim(ClaimTypes.Email, email),
-            new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString())
+            new Claim(ClaimTypes.Name, user.Email),
+            new Claim(ClaimTypes.Role, user.Role),
+            new Claim("UserId",user.Id.ToString())
         };
+        var Permissions = GetPermissionsByRole(user.Role);
 
+        foreach (var permission in Permissions)
+        {
+            claims.Add(new Claim("Permission", permission));
+        }
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_config["Jwt:Key"])
         );
@@ -35,5 +42,33 @@ public class TokenService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private List<string> GetPermissionsByRole(string role)
+    {
+        return role switch
+        {
+            "Admin" => new List<string>
+            {
+                "Student.View",
+                "Student.Create",
+                "Student.Edit",
+                "Student.Delete"
+            },
+
+            "Teacher" => new List<string>
+            {
+                "Student.View",
+                "Student.Create",
+                "Student.Edit"
+            },
+
+            "Student" => new List<string>
+            {
+                "Student.View"
+            },
+
+            _ => new List<string>()
+        };
     }
 }

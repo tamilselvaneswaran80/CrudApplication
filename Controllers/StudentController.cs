@@ -1,7 +1,7 @@
-﻿using Crud_application.Data;
+﻿using Crud_application.Services;
 using Curd_application.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+//using static Curd_application.Services.StudentService;
 
 namespace EmployeeManagement.Controllers
 {
@@ -9,122 +9,67 @@ namespace EmployeeManagement.Controllers
     [ApiController]
     public class StudentController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IStudentService _studentService;
 
-        public StudentController(AppDbContext context)
+        public StudentController(IStudentService studentService)
         {
-            _context = context;
+            _studentService = studentService;
         }
 
         // GET ALL
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Student>>> GetStudents()
+        public async Task<IActionResult> GetStudents()
         {
-            return await _context.Students.ToListAsync();
+            var students = await _studentService.GetStudents();
+            return Ok(students);
         }
 
         // GET BY ID
         [HttpGet("{id}")]
-        public async Task<ActionResult<Student>> GetStudent(int id)
+        public async Task<IActionResult> GetStudent(int id)
         {
-            var student = await _context.Students.FindAsync(id);
+            var student = await _studentService.GetStudent(id);
 
             if (student == null)
                 return NotFound();
 
-            return student;
+            return Ok(student);
         }
-
-        // CREATE
-        //[HttpPost]  public async Task<ActionResult<Student>> CreateStudent(Student student)
-        //{
-        //    _context.Students.Add(student);
-        //    await _context.SaveChangesAsync();
-
-        //    return Ok(student);
-        //}
-
 
         // CREATE
         [HttpPost]
-        public async Task<IActionResult> CreateStudent([FromBody] Student student)
+        public async Task<IActionResult> CreateStudent(Student student)
         {
-            try
-            {
-                if (student == null)
-                {
-                    return BadRequest("Student data is null");
-                }
 
-                await _context.Students.AddAsync(student);
-                await _context.SaveChangesAsync();
+            if (student == null)
+                return BadRequest("Invalid data");
 
-                return Ok(student);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateStudent(int id, [FromBody] Student student)
-        {
-            try
-            {
-                var existingStudent = await _context.Students.FindAsync(id);
-
-                if (existingStudent == null)
-                {
-                    return NotFound("Student not found");
-                }
-
-                // Update fields
-                existingStudent.Firstname = student.Firstname;
-                existingStudent.Lastname = student.Lastname;
-                existingStudent.Age = student.Age;
-                existingStudent.Course = student.Course;
-                existingStudent.PhoneNumber = student.PhoneNumber;
-
-                await _context.SaveChangesAsync();
-
-                return Ok(existingStudent);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
+            var result = await _studentService.CreateStudent(student);
+            return Ok(result);
         }
 
         // UPDATE
-        //[HttpPut("{id}")]
-        //public async Task<IActionResult> UpdateStudent(int id, Student student)
-        //{
-        //    if (id != student.StudentId)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateStudent(int id, Student student)
+        {
+            var result = await _studentService.UpdateStudent(id, student);
 
-        //        return BadRequest();
+            if (result == null)
+                return NotFound();
 
-        //    _context.Entry(student).State = EntityState.Modified;
-
-        //    await _context.SaveChangesAsync();
-
-        //    return NoContent();
-        //}
+            return Ok(result);
+        }
 
         // DELETE
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteStudent(int id)
         {
-            var student = await _context.Students.FindAsync(id);
+            var deleted = await _studentService.DeleteStudent(id);
 
-            if (student == null)
+            if (!deleted)
                 return NotFound();
 
-            _context.Students.Remove(student);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok(new { message = "Student Deleted" });
         }
     }
 }
